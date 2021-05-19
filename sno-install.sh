@@ -65,10 +65,6 @@ prepare_host() {
   sudo cp -f files/dhcpd.conf /etc/dhcp/dhcp.conf
   sudo cp -f files/named.conf /etc/named.conf
   sudo cp -f files/*.db /var/named/
-  systemctl enable named
-  systemctl enable dhcpd
-  systemctl start named
-  systemctl start dhcpd
   wget $OC_CLIENT
   tar -zxvf openshift-client*
   cp oc kubectl /usr/bin/
@@ -256,6 +252,18 @@ EOF
 	scp -o StrictHostKeyChecking=no files/*.db root@192.168.123.100:/var/named/
   scp -o StrictHostKeyChecking=no files/squid.conf root@192.168.123.100:/etc/squid/squid.conf
   scp -o StrictHostKeyChecking=no files/named.conf root@192.168.123.100:/etc/named.conf
+
+  ssh -o StrictHostKeyChecking=no root@192.168.123.100 'echo -e "search example.com\nnameserver 192.168.123.100" > /etc/resolv.conf && chattr +i /etc/resolv.conf'
+  echo -e "\n\n[INFO] Rebooting bastion host...\n"
+
+  ssh -o StrictHostKeyChecking=no root@192.168.123.100 reboot
+
+  echo -ne "\n[INFO] Waiting for the ssh daemon on the bastion host to appear"
+  while [ ! "`nmap -sV -p 22 192.168.123.100|grep open`" ]; do
+    echo -n "."
+    sleep 1s
+  done
+  echo
 }
 
 prepare_host
