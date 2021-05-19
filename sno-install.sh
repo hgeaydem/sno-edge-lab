@@ -58,6 +58,7 @@ prepare_host() {
   wget $OC_CLIENT
   tar -zxvf openshift-client*
   cp oc kubectl /usr/bin/
+  oc adm release extract --registry-config=registry-config.json --command=openshift-install --to ./bin ${RELEASE_IMAGE}
 }
 
 download_live_iso() {
