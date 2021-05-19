@@ -1,8 +1,11 @@
 #!/bin/bash
+set -x
 
 PULL_SECRET=''
+
 INSTALLATION_DISK="/dev/vda"
 RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.0-x86_64"
+BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-live.x86_64.iso"
 
 OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
 
@@ -29,8 +32,8 @@ NET_CONFIG_TEMPLATE="${SNO_DIR}/files/net.xml.template"
 NET_CONFIG="${SNO_DIR}/net.xml"
 
 NET_NAME="ocp4-net"
-VM_NAME="sno-test"
-VOL_NAME="${VM_NAME}.qcow2"
+VM_NAME="rhacm"
+VOL_NAME="$VM_NAME.qcow2"
 
 SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
 
@@ -46,6 +49,8 @@ SNO_HOST_IP="192.168.126.10"
 SSH_HOST="core@${HOST_IP}"
 
 prepare_host() {
+  mkdir -p $INSTALLER_WORKDIR
+  mkdir -p bin
   sudo dnf -y update
   sudo dnf -y install podman libvirt kvm-qemu jq bind dhcp-server
   sudo cp -f files/dhcpd.conf /etc/dhcp/dhcp.conf
@@ -58,6 +63,7 @@ prepare_host() {
   wget $OC_CLIENT
   tar -zxvf openshift-client*
   cp oc kubectl /usr/bin/
+  jq -n $PULL_SECRET > registry-config.json
   oc adm release extract --registry-config=registry-config.json --command=openshift-install --to ./bin ${RELEASE_IMAGE}
 }
 
@@ -101,10 +107,10 @@ define_network() {
 
 customize_install_config() {
   cp files/install-config.yaml ${INSTALLER_WORKDIR}
-  sed -i 's/CLUSTER_NAME/$VM_NAME/g' ${INSTALLER_WORKDIR}/install-config.yaml
-  sed -i 's/INSTALLATION_DISK/$INSTALLATION_DISK/g' ${INSTALLER_WORKDIR}/install-config.yaml
-  sed -i 's/PULL_SECRET/$PULL_SECRET/g' ${INSTALLER_WORKDIR}/install-config.yaml
-  sed -i 's/SSH_KEY/$SSH_KEY/g' ${INSTALLER_WORKDIR}/install-config.yaml
+  sed -i "s/CLUSTER_NAME/$VM_NAME/g" ${INSTALLER_WORKDIR}/install-config.yaml
+  sed -i "s|INSTALLATION_DISK|$INSTALLATION_DISK|g" ${INSTALLER_WORKDIR}/install-config.yaml
+  sed -i "s/PULL_SECRET/$PULL_SECRET/g" ${INSTALLER_WORKDIR}/install-config.yaml
+  sed -i "s|SSH_KEY|$SSH_KEY|g" ${INSTALLER_WORKDIR}/install-config.yaml
 }
 
 install_vm_ign() {
@@ -124,7 +130,7 @@ install_vm_ign() {
       --network=network:${NET_NAME},mac=ba:dc:0f:fe:ee:00 \
       --graphics=none \
       --events on_reboot=restart \
-      --cdrom "${RHCOS_ISO}" \
+      --cdrom "${INSTALLER_ISO_PATH_SNO_IN_LIBVIRT}" \
       --disk pool=default,size="${DISK_GB}" \
       --boot hd,cdrom \
       --noautoconsole \
@@ -138,4 +144,5 @@ customize_install_config
 generate_ign
 generate_manifests
 embed_ign
+cp -f $EMBEDDED_ISO $INSTALLER_ISO_PATH_SNO_IN_LIBVIRT
 install_vm_ign
