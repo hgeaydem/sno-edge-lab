@@ -6,7 +6,8 @@ PULL_SECRET=''
 INSTALLATION_DISK="/dev/vda"
 RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.0-x86_64"
 BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-live.x86_64.iso"
-BASTION_MEMORY=16384
+BASTION_MEMORY=8192
+RAM_MB=32768
 OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
 
 
