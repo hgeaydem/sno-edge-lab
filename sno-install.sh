@@ -46,7 +46,7 @@ SSH_FLAGS=" -o IdentityFile=${SSH_KEY_PRIV_PATH} \
  			-o StrictHostKeyChecking=no"
 
 SNO_HOST_IP="192.168.126.10"
-SSH_HOST="core@${HOST_IP}"
+SSH_HOST="core@${SNO_HOST_IP}"
 
 prepare_host() {
   mkdir -p $INSTALLER_WORKDIR
