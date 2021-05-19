@@ -59,7 +59,7 @@ prepare_host() {
   mkdir -p $INSTALLER_WORKDIR
   mkdir -p bin
   sudo dnf -y update
-  sudo dnf -y install podman libvirt kvm-qemu jq bind dhcp-server
+  sudo dnf -y install podman libvirt qemu-kvm jq bind dhcp-server nmap
   sudo cp -f files/dhcpd.conf /etc/dhcp/dhcp.conf
   sudo cp -f files/named.conf /etc/named.conf
   sudo cp -f files/*.db /var/named/
@@ -155,7 +155,7 @@ prepare_bastion() {
   sudo qemu-img create -f qcow2 /var/lib/libvirt/images/ocp4-bastion.qcow2 -b /var/lib/libvirt/images/rhel8-kvm.qcow2 -F qcow2 200G
   sudo -E virt-customize -a /var/lib/libvirt/images/ocp4-bastion.qcow2 --uninstall cloud-init
   sudo -E virt-customize -a /var/lib/libvirt/images/ocp4-bastion.qcow2 --root-password password:redhat
-  sudo -E virt-copy-in -a /var/lib/libvirt/images/ocp4-bastion.qcow2 configs/ifcfg-eth0 /etc/sysconfig/network-scripts
+  sudo -E virt-copy-in -a /var/lib/libvirt/images/ocp4-bastion.qcow2 files/ifcfg-eth0 /etc/sysconfig/network-scripts
   sudo -E virt-customize -a /var/lib/libvirt/images/ocp4-bastion.qcow2 --run-command "mkdir -p /root/.ssh/ && chmod -R 0700 /root/.ssh/"
   sudo -E virt-customize -a /var/lib/libvirt/images/ocp4-bastion.qcow2 --run-command "restorecon -Rv /root/.ssh/"
 
@@ -163,7 +163,7 @@ prepare_bastion() {
   sudo virt-install --virt-type kvm --ram $BASTION_MEMORY --vcpus 4 --os-variant rhel8.1 --disk path=/var/lib/libvirt/images/ocp4-bastion.qcow2,device=disk,bus=virtio,format=qcow2 $CPU_FLAGS --noautoconsole --vnc --network network:ocp4-net,mac=52:54:00:22:33:44 --boot hd --name ocp4-bastion --print-xml 1 > node-configs/ocp4-bastion.xml
 
   echo -e "\n[INFO] Starting the bastion host and copying in our ssh keypair...\n"
-
+  sudo virsh define node-configs/ocp4-bastion.xml
   sudo virsh start ocp4-bastion
   #sleep 60
   echo -ne "\n[INFO] Waiting for the ssh daemon on the bastion host to appear"
