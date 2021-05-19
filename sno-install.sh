@@ -4,6 +4,9 @@ PULL_SECRET=''
 INSTALLATION_DISK="/dev/vda"
 RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.0-x86_64"
 
+OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
+
+
 ########################
 SNO_DIR="$(pwd)"
 INSTALLER_WORKDIR="sno-workdir"
@@ -52,6 +55,9 @@ prepare_host() {
   systemctl enable dhcpd
   systemctl start named
   systemctl start dhcpd
+  wget $OC_CLIENT
+  tar -zxvf openshift-client*
+  cp oc kubectl /usr/bin/
 }
 
 download_live_iso() {
