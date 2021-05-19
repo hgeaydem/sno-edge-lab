@@ -1,0 +1,52 @@
+<network>
+  <name>REPLACE_NET_NAME</name>
+  <uuid>a29bce40-ce15-43c8-9142-fd0a3cc37f9a</uuid>
+  <forward mode='nat'/>
+  <bridge name='tt0' stp='on' delay='0'/>
+  <mtu size='1500'/>
+  <mac address='52:54:00:e0:8d:fe'/>
+  <domain name='test-cluster.redhat.com' localOnly='yes'/>
+  <dns enable='yes'>
+    <host ip='192.168.126.10'>
+      <hostname>api.rhacm.example.com</hostname>
+      <hostname>api-int.rhacm.example.com</hostname>
+      <hostname>console-openshift-console.apps.rhacm.example.com</hostname>
+      <hostname>oauth-openshift.apps.rhacm.example.com</hostname>
+      <hostname>canary-openshift-ingress-canary.apps.rhacm.example.com</hostname>
+    </host>
+    <host ip='192.168.126.20'>
+      <hostname>api.edge1.example.com</hostname>
+      <hostname>api-int.edge1.example.com</hostname>
+      <hostname>console-openshift-console-apps.edge1.example.com</hostname>
+      <hostname>oauth-openshift.apps.edge1.example.com</hostname>
+      <hostname>canary-openshift-ingress-canary.apps.edge1.example.com</hostname>
+    </host>
+    <host ip='192.168.126.30'>
+      <hostname>api.edge2.example.com</hostname>
+      <hostname>api-int.edge2.example.com</hostname>
+      <hostname>console-openshift-console-apps.edge2.example.com</hostname>
+      <hostname>oauth-openshift.apps.edge2.example.com</hostname>
+      <hostname>canary-openshift-ingress-canary.apps.edge2.example.com</hostname>
+    </host>
+    <host ip='192.168.126.40'>
+      <hostname>api.edge3.example.com</hostname>
+      <hostname>api-int.edge3.example.com</hostname>
+      <hostname>console-openshift-console-apps.edge3.example.com</hostname>
+      <hostname>oauth-openshift.apps.edge3.example.com</hostname>
+      <hostname>canary-openshift-ingress-canary.apps.edge3.example.com</hostname>
+    </host>
+    <host ip='192.168.126.50'>
+      <hostname>api.edge4.example.com</hostname>
+      <hostname>api-int.edge4.example.com</hostname>
+      <hostname>console-openshift-console-apps.edge4.example.com</hostname>
+      <hostname>oauth-openshift.apps.edge4.example.com</hostname>
+      <hostname>canary-openshift-ingress-canary.apps.edge4.example.com</hostname>
+    </host>
+  </dns>
+  <ip family='ipv4' address='192.168.126.1' prefix='24'>
+    <dhcp>
+      <range start='192.168.126.2' end='192.168.126.254'/>
+      <host mac='52:54:00:ee:42:e1' name='master1' ip='REPLACE_HOST_IP'/>
+    </dhcp>
+  </ip>
+</network>
