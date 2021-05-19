@@ -59,7 +59,9 @@ prepare_host() {
   mkdir -p $INSTALLER_WORKDIR
   mkdir -p bin
   sudo dnf -y update
-  sudo dnf -y install podman libvirt qemu-kvm jq bind dhcp-server nmap
+  sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+  sudo dnf -y install wget libvirt qemu-kvm virt-manager virt-install libguestfs libguestfs-tools libguestfs-xfs net-tools sshpass virt-what nmap
+  sudo dnf -y install podman jq
   sudo cp -f files/dhcpd.conf /etc/dhcp/dhcp.conf
   sudo cp -f files/named.conf /etc/named.conf
   sudo cp -f files/*.db /var/named/
