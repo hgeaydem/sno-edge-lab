@@ -8,13 +8,12 @@ RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.0-x86_64"
 RHEL8_KVM=https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2
 BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-live.x86_64.iso"
 BASTION_MEMORY=8192
-RAM_MB=32768
 OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
 
 
 ########################
 SNO_DIR="$(pwd)"
-INSTALLER_WORKDIR="sno-workdir"
+INSTALLER_WORKDIR="sno-workdir-$VM_NAME"
 INSTALLER_BIN="bin/openshift-install"
 LIVE_ISO_IGNITION_NAME="bootstrap-in-place-for-live-iso.ign"
 BIP_LIVE_ISO_IGNITION="${INSTALLER_WORKDIR}/${LIVE_ISO_IGNITION_NAME}"
@@ -23,29 +22,16 @@ EMBEDDED_ISO="${INSTALLER_WORKDIR}/embedded.iso"
 
 LIBVIRT_ISO_PATH="/var/lib/libvirt/images"
 INSTALLER_ISO_PATH="${SNO_DIR}/installer-image.iso"
-INSTALLER_ISO_PATH_SNO="${SNO_DIR}/installer-SNO-image.iso"
 INSTALLER_ISO_PATH_SNO_IN_LIBVIRT="${LIBVIRT_ISO_PATH}/installer-SNO-image.iso"
 
-INSTALL_CONFIG_TEMPLATE="${SNO_DIR}/files/install-config.yaml.template"
 INSTALL_CONFIG="${SNO_DIR}/install-config.yaml"
 INSTALL_CONFIG_IN_WORKDIR="${INSTALLER_WORKDIR}/install-config.yaml"
-
-NET_CONFIG_TEMPLATE="${SNO_DIR}/files/net.xml.template"
-NET_CONFIG="${SNO_DIR}/net.xml"
 
 NET_NAME="ocp4-net"
 VM_NAME="rhacm"
 VOL_NAME="$VM_NAME.qcow2"
 
 SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
-
-SSH_KEY_DIR="${SNO_DIR}/ssh-key"
-SSH_KEY_PUB_PATH="${SSH_KEY_DIR}/key.pub"
-SSH_KEY_PRIV_PATH="${SSH_KEY_DIR}/key"
-
-SSH_FLAGS=" -o IdentityFile=${SSH_KEY_PRIV_PATH} \
- 			-o UserKnownHostsFile=/dev/null \
- 			-o StrictHostKeyChecking=no"
 
 SNO_HOST_IP="192.168.126.10"
 SSH_HOST="core@${SNO_HOST_IP}"
@@ -56,15 +42,11 @@ prepare_host() {
     SSH_PUB_FILE=~/.ssh/id_rsa.pub
     SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
   fi
-  mkdir -p $INSTALLER_WORKDIR
   mkdir -p bin
   sudo dnf -y update
   sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
   sudo dnf -y install wget libvirt qemu-kvm virt-manager virt-install libguestfs libguestfs-tools libguestfs-xfs net-tools sshpass virt-what nmap
   sudo dnf -y install podman jq
-  sudo cp -f files/dhcpd.conf /etc/dhcp/dhcp.conf
-  sudo cp -f files/named.conf /etc/named.conf
-  sudo cp -f files/*.db /var/named/
   wget $OC_CLIENT
   tar -zxvf openshift-client*
   cp oc kubectl /usr/bin/
@@ -124,6 +106,7 @@ install_vm_ign() {
   RAM_MB="${RAM_MB:-16384}"
   DISK_GB="${DISK_GB:-30}"
   CPU_CORE="${CPU_CORE:-6}"
+  MAC_ADDR="${MAC_ADDR:-ba:dc:0f:fe:ee:00}"
 
   rm nohup.out
   nohup virt-install \
@@ -133,7 +116,7 @@ install_vm_ign() {
       --vcpus "${CPU_CORE}" \
       --os-variant="${OS_VARIANT}" \
       --import \
-      --network=network:${NET_NAME},mac=ba:dc:0f:fe:ee:00 \
+      --network=network:${NET_NAME},mac=${MAC_ADDR} \
       --graphics=none \
       --events on_reboot=restart \
       --cdrom "${INSTALLER_ISO_PATH_SNO_IN_LIBVIRT}" \
@@ -269,9 +252,26 @@ EOF
 prepare_host
 define_network
 prepare_bastion
-download_live_iso
-customize_install_config
-generate_ign
-generate_manifests
-embed_ign
-install_vm_ign
+for i in "rhacm edge1 edge2 edge3 edge4"
+do
+  VM_NAME=$i
+  VOL_NAME="$VM_NAME.qcow2"
+  INSTALLER_WORKDIR="sno-workdir-$VM_NAME"
+  mkdir -p $INSTALLER_WORKDIR
+  download_live_iso
+  customize_install_config
+  generate_ign
+  generate_manifests
+  embed_ign
+  case $VM_NAME in
+    rhacm) RAM_MB="32768"
+           DISK_GB="200"
+           CPU_CORE="12"
+           ;;
+    edge1) MAC_ADDR="ba:dc:0f:fe:ee:01" ;;
+    edge2) MAC_ADDR="ba:dc:0f:fe:ee:02" ;;
+    edge3) MAC_ADDR="ba:dc:0f:fe:ee:03" ;;
+    edge4) MAC_ADDR="ba:dc:0f:fe:ee:04" ;;
+  esac
+  install_vm_ign
+done
