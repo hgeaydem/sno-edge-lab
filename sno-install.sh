@@ -61,6 +61,7 @@ download_live_iso() {
 embed_ign() {
   DOWNLOAD_PATH="${INSTALLER_WORKDIR}/base.iso"
   EMBEDDED_ISO="${INSTALLER_WORKDIR}/embedded.iso"
+  BIP_LIVE_ISO_IGNITION="${INSTALLER_WORKDIR}/${LIVE_ISO_IGNITION_NAME}"
   podman run \
     --pull=always \
     --privileged \
