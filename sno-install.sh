@@ -17,8 +17,7 @@ INSTALLER_WORKDIR="sno-workdir-$VM_NAME"
 INSTALLER_BIN="bin/openshift-install"
 LIVE_ISO_IGNITION_NAME="bootstrap-in-place-for-live-iso.ign"
 BIP_LIVE_ISO_IGNITION="${INSTALLER_WORKDIR}/${LIVE_ISO_IGNITION_NAME}"
-DOWNLOAD_PATH="${INSTALLER_WORKDIR}/base.iso"
-EMBEDDED_ISO="${INSTALLER_WORKDIR}/embedded.iso"
+
 
 LIBVIRT_ISO_PATH="/var/lib/libvirt/images"
 INSTALLER_ISO_PATH="${SNO_DIR}/installer-image.iso"
@@ -55,10 +54,13 @@ prepare_host() {
 }
 
 download_live_iso() {
+  DOWNLOAD_PATH="${INSTALLER_WORKDIR}/base.iso"
   curl ${BASE_OS_IMAGE} --retry 5 -o $DOWNLOAD_PATH
 }
 
 embed_ign() {
+  DOWNLOAD_PATH="${INSTALLER_WORKDIR}/base.iso"
+  EMBEDDED_ISO="${INSTALLER_WORKDIR}/embedded.iso"
   podman run \
     --pull=always \
     --privileged \
@@ -252,7 +254,7 @@ EOF
 prepare_host
 define_network
 prepare_bastion
-for i in "rhacm edge1 edge2 edge3 edge4"
+for i in rhacm edge1 edge2 edge3 edge4
 do
   VM_NAME=$i
   VOL_NAME="$VM_NAME.qcow2"
