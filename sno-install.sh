@@ -272,14 +272,17 @@ do
   generate_manifests
   embed_ign
   case $VM_NAME in
-    rhacm) RAM_MB="32768"
-           DISK_GB="200"
-           CPU_CORE="12"
+    rhacm) RAM_MB="49152"
+           DISK_GB="100"
+           CPU_CORE="16"
            ;;
     edge1) MAC_ADDR="ba:dc:0f:fe:ee:01" ;;
     edge2) MAC_ADDR="ba:dc:0f:fe:ee:02" ;;
     edge3) MAC_ADDR="ba:dc:0f:fe:ee:03" ;;
     edge4) MAC_ADDR="ba:dc:0f:fe:ee:04" ;;
   esac
+  sleep 2
   install_vm_ign
+  echo "Let it SNO !"
+  sleep 2
 done
