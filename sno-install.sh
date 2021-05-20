@@ -257,6 +257,11 @@ do
   VM_NAME=$i
   VOL_NAME="$VM_NAME.qcow2"
   INSTALLER_WORKDIR="sno-workdir-$VM_NAME"
+  INSTALLER_ISO_PATH_SNO_IN_LIBVIRT="${LIBVIRT_ISO_PATH}/installer-SNO-image-$VM_NAME.iso"
+  MAC_ADDR="ba:dc:0f:fe:ee:00"
+  RAM_MB="16384"
+  DISK_GB="50"
+  CPU_CORE="6"
   mkdir -p $INSTALLER_WORKDIR
   download_live_iso
   customize_install_config
