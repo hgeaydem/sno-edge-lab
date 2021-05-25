@@ -204,15 +204,12 @@ prepare_bastion() {
   systemctl enable rpcbind
   systemctl enable nfs-server
   sed -i 's/Listen 80/Listen 81/g' /etc/httpd/conf/httpd.conf
-  wget $OCP_INSTALL
   wget $OC_CLIENT
   tar -zxvf openshift-client*
-  tar -zxvf openshift-install*
   cp oc kubectl /usr/bin/
   rm -f oc kubectl
   chmod a+x /usr/bin/oc
   chmod a+x /usr/bin/kubectl
-  mkdir -p /root/ocp-install/
   growpart /dev/vda 1
   xfs_growfs /
   dnf install -y libvirt qemu-kvm mkisofs python3-devel jq ipmitool
