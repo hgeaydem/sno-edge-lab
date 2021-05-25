@@ -32,6 +32,8 @@ VOL_NAME="$VM_NAME.qcow2"
 
 SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
 
+SSH_PUB_FILE="~/.ssh/id_rsa.pub"
+
 SNO_HOST_IP="192.168.126.10"
 SSH_HOST="core@${SNO_HOST_IP}"
 
