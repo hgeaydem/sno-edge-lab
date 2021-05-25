@@ -56,8 +56,14 @@ prepare_host() {
 }
 
 download_live_iso() {
-  DOWNLOAD_PATH="${INSTALLER_WORKDIR}/base.iso"
-  curl ${BASE_OS_IMAGE} --retry 5 -o $DOWNLOAD_PATH
+  DOWNLOAD_PATH="${SNO_DIR}/base.iso"
+  if [ -f $DOWNLOAD_PATH ]
+  then
+    cp $DOWNLOAD_PATH $INSTALLER_WORKDIR/base.iso
+  else
+    curl ${BASE_OS_IMAGE} --retry 5 -o $DOWNLOAD_PATH
+    cp $DOWNLOAD_PATH $INSTALLER_WORKDIR/base.iso
+  fi
 }
 
 embed_ign() {
@@ -212,12 +218,6 @@ prepare_bastion() {
   virsh pool-define-as --name default --type dir --target /var/lib/libvirt/images
   virsh pool-start default
   virsh pool-autostart default
-  nmcli connection add ifname provisioning type bridge con-name provisioning
-  nmcli con add type bridge-slave ifname eth1 master provisioning
-  nmcli connection modify provisioning ipv4.addresses 172.22.0.1/24 ipv4.method manual
-  nmcli connection modify provisioning ipv4.gateway 172.22.0.254
-  nmcli con down provisioning
-  nmcli con up provisioning
   nmcli connection add ifname baremetal type bridge con-name baremetal
   nmcli con add type bridge-slave ifname eth0 master baremetal
   nmcli con down "System eth0"
@@ -285,6 +285,7 @@ do
   esac
   sleep 2
   install_vm_ign
-  echo "Let it SNO !"
   sleep 2
+  cp -aR $INSTALLER_WORKDIR/auth auth-$i
+  scp -o StrictHostKeyChecking=no -r auth-$i root@192.168.123.100:/root/
 done
