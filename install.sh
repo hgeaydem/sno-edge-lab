@@ -239,6 +239,7 @@ EOF
 	scp -o StrictHostKeyChecking=no files/*.db root@192.168.123.100:/var/named/
   scp -o StrictHostKeyChecking=no files/squid.conf root@192.168.123.100:/etc/squid/squid.conf
   scp -o StrictHostKeyChecking=no files/named.conf root@192.168.123.100:/etc/named.conf
+  scp -o StrictHostKeyChecking=no files/wait-first-cluster.sh root@192.168.123.100:/root/wait-first-cluster.sh
 
   ssh -o StrictHostKeyChecking=no root@192.168.123.100 'echo -e "search example.com\nnameserver 192.168.123.100" > /etc/resolv.conf && chattr +i /etc/resolv.conf'
   echo -e "\n\n[INFO] Rebooting bastion host...\n"
@@ -288,3 +289,7 @@ do
   cp -aR $INSTALLER_WORKDIR/auth auth-$i
   scp -o StrictHostKeyChecking=no -r auth-$i root@192.168.123.100:/root/
 done
+ssh -o StrictHostKeyChecking=no root@192.168.123.100 sh /root/wait-first-cluster.sh
+KUBEADMIN=$(cat $SNO_DIR/auth-rhacm/kubeadmin-password)
+echo "You can access the first cluster on https://console-openshift-console.apps.rhacm.example.com/"
+echo "User : kubeadmin / Password : $KUBEADMIN"
