@@ -195,7 +195,7 @@ prepare_bastion() {
   sshpass -p redhat ssh-copy-id -o StrictHostKeyChecking=no -i $SSH_PUB root@192.168.123.100
 
   cat <<EOF > bastion-deploy.sh
-  hostnamectl set-hostname ocp4-bastion.cnv.example.com
+  hostnamectl set-hostname ocp4-bastion.rhacm.example.com
   dnf install qemu-img nmap jq git httpd squid podman dhcp-server xinetd net-tools nano bind bind-utils haproxy wget syslinux libvirt-libs -y
   dnf install tftp-server syslinux-tftpboot -y
   dnf update -y
