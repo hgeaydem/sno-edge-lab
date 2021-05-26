@@ -6,10 +6,12 @@ PULL_SECRET=''
 INSTALLATION_DISK="/dev/vda"
 RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.5-x86_64"
 RHEL8_KVM=https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2
+#BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-live.x86_64.iso"
 BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/4.8.0-fc.5/rhcos-4.8.0-fc.5-x86_64-live.x86_64.iso"
 BASTION_MEMORY=8192
 OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
 
+DISCONNECTED=true
 
 ########################
 SNO_DIR="$(pwd)"
@@ -32,7 +34,7 @@ VOL_NAME="$VM_NAME.qcow2"
 
 SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
 
-SSH_PUB_FILE="~/.ssh/id_rsa.pub"
+SSH_PUB_FILE="/root/.ssh/id_rsa.pub"
 
 SNO_HOST_IP="192.168.126.10"
 SSH_HOST="core@${SNO_HOST_IP}"
@@ -50,7 +52,8 @@ prepare_host() {
   sudo dnf -y install podman jq
   systemctl enable libvirtd
   systemctl start libvirtd
-  wget $OC_CLIENT
+#  wget $OC_CLIENT
+  cp files/openshift-client* .
   tar -zxvf openshift-client*
   cp oc kubectl /usr/bin/
   jq -n $PULL_SECRET > registry-config.json
@@ -112,6 +115,27 @@ customize_install_config() {
   sed -i "s|INSTALLATION_DISK|$INSTALLATION_DISK|g" ${INSTALLER_WORKDIR}/install-config.yaml
   sed -i "s/PULL_SECRET/$PULL_SECRET/g" ${INSTALLER_WORKDIR}/install-config.yaml
   sed -i "s|SSH_KEY|$SSH_KEY|g" ${INSTALLER_WORKDIR}/install-config.yaml
+  if $USE_DISCONNECTED; then
+    cat > $INSTALLER_WORKDIR/reg-secret.txt << EOF
+"$LOCAL_HOSTNAME:5000": {
+    "email": "dummy@redhat.com",
+    "auth": "ZHVtbXk6ZHVtbXk="
+}
+EOF
+    echo $PULL_SECRET > $INSTALLER_WORKDIR/secret.json
+    cat $INSTALLER_WORKDIR/secret.json| jq ".auths += {`cat $INSTALLER_WORKDIR/reg-secret.txt`}" > $INSTALLER_WORKDIR/secret.json
+    cat $INSTALLER_WORKDIR/secret.json | tr -d '[:space:]' > $INSTALLER_WORKDIR/tmp-secret
+    mv -f $INSTALLER_WORKDIR/tmp-secret $INSTALLER_WORKDIR/pull-secret.json
+    echo \
+"imageContentSources:
+- mirrors:
+  - ocp4-bastion.$VM_NAME.example.com:5000/ocp4/openshift4
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - ocp4-bastion.$VM_NAME.example.com:5000/ocp4/openshift4
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev" >> ${INSTALLER_WORKDIR}/install-config.yaml
+    sed -i "s|pullSecret:.*|pullSecret: '$(cat $INSTALLER_WORKDIR/pull-secret.json)'|g" ${INSTALLER_WORKDIR}/install-config.yaml
+  fi
 }
 
 install_vm_ign() {
@@ -172,7 +196,7 @@ prepare_bastion() {
 
   cat <<EOF > bastion-deploy.sh
   hostnamectl set-hostname ocp4-bastion.cnv.example.com
-  dnf install qemu-img jq git httpd squid dhcp-server xinetd net-tools nano bind bind-utils haproxy wget syslinux libvirt-libs -y
+  dnf install qemu-img jq git httpd squid podman dhcp-server xinetd net-tools nano bind bind-utils haproxy wget syslinux libvirt-libs -y
   dnf install tftp-server syslinux-tftpboot -y
   dnf update -y
   ssh-keygen -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa
@@ -204,7 +228,6 @@ prepare_bastion() {
   systemctl enable rpcbind
   systemctl enable nfs-server
   sed -i 's/Listen 80/Listen 81/g' /etc/httpd/conf/httpd.conf
-  wget $OC_CLIENT
   tar -zxvf openshift-client*
   cp oc kubectl /usr/bin/
   rm -f oc kubectl
@@ -213,19 +236,9 @@ prepare_bastion() {
   growpart /dev/vda 1
   xfs_growfs /
   dnf install -y libvirt qemu-kvm mkisofs python3-devel jq ipmitool
-  systemctl enable --now libvirtd
-  virsh pool-define-as --name default --type dir --target /var/lib/libvirt/images
-  virsh pool-start default
-  virsh pool-autostart default
-  nmcli connection add ifname baremetal type bridge con-name baremetal
-  nmcli con add type bridge-slave ifname eth0 master baremetal
-  nmcli con down "System eth0"
-  nmcli connection modify baremetal ipv4.addresses 192.168.123.100/24 ipv4.method manual
-  nmcli connection modify baremetal ipv4.gateway 192.168.123.1
-  nmcli con down baremetal
-  nmcli con up baremetal
-  rm -f /etc/sysconfig/network-scripts/ifcfg-eth0
 EOF
+
+  scp -o StrictHostKeyChecking=no files/openshift-client* root@192.168.123.100:/root/
 
   echo -e "\n\n[INFO] Running the bastion deployment script remotely...\n"
 
@@ -241,6 +254,15 @@ EOF
   scp -o StrictHostKeyChecking=no files/named.conf root@192.168.123.100:/etc/named.conf
   scp -o StrictHostKeyChecking=no files/wait-first-cluster.sh root@192.168.123.100:/root/wait-first-cluster.sh
 
+  if $USE_DISCONNECTED; then
+      echo -e "\n\n[INFO] Deploying the disconnected image registry...\n"
+      scp -o StrictHostKeyChecking=no files/deploy-disconnected.sh root@192.168.123.100:/root/
+      echo $PULL_SECRET > /tmp/secret
+      scp -o StrictHostKeyChecking=no /tmp/secret root@192.168.123.100:~/pull-secret.json
+      rm /tmp/secret -f
+      ssh -o StrictHostKeyChecking=no root@192.168.123.100 sh /root/deploy-disconnected.sh
+  fi
+
   ssh -o StrictHostKeyChecking=no root@192.168.123.100 'echo -e "search example.com\nnameserver 192.168.123.100" > /etc/resolv.conf && chattr +i /etc/resolv.conf'
   echo -e "\n\n[INFO] Rebooting bastion host...\n"
 
@@ -251,6 +273,11 @@ EOF
     echo -n "."
     sleep 1s
   done
+  if $USE_DISCONNECTED; then
+    sleep 30
+    scp -o StrictHostKeyChecking=no root@192.168.123.100:/root/pull-secret.json $SNO_DIR/
+    ssh -o StrictHostKeyChecking=no root@192.168.123.100 podman start poc-registry
+  fi
   echo
 }
 
