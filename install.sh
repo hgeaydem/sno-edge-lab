@@ -257,6 +257,7 @@ EOF
   if $USE_DISCONNECTED; then
       echo -e "\n\n[INFO] Deploying the disconnected image registry...\n"
       scp -o StrictHostKeyChecking=no files/deploy-disconnected.sh root@192.168.123.100:/root/
+      scp -o StrictHostKeyChecking=no files/release.txt root@192.168.123.100:/root/
       echo $PULL_SECRET > /tmp/secret
       scp -o StrictHostKeyChecking=no /tmp/secret root@192.168.123.100:~/pull-secret.json
       rm /tmp/secret -f
