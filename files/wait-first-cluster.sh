@@ -2,7 +2,7 @@
 KUBECONFIG=/root/auth-rhacm/kubeconfig
 
 echo -ne "\n[INFO] Waiting for the rhacm cluster to be done installing (1/4, this one can take up to 40 minutes so sit back and relax)"
-while [ ! "`nmap -sV -p 6443 192.168.123.10 |grep open`" ]; do
+while [ ! "`nmap -p 6443 192.168.123.10 |grep open`" ]; do
   echo -n "."
   sleep 1s
 done
