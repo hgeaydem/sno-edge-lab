@@ -196,7 +196,7 @@ prepare_bastion() {
 
   cat <<EOF > bastion-deploy.sh
   hostnamectl set-hostname ocp4-bastion.cnv.example.com
-  dnf install qemu-img jq git httpd squid podman dhcp-server xinetd net-tools nano bind bind-utils haproxy wget syslinux libvirt-libs -y
+  dnf install qemu-img nmap jq git httpd squid podman dhcp-server xinetd net-tools nano bind bind-utils haproxy wget syslinux libvirt-libs -y
   dnf install tftp-server syslinux-tftpboot -y
   dnf update -y
   ssh-keygen -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa
@@ -317,6 +317,7 @@ do
   cp -aR $INSTALLER_WORKDIR/auth auth-$i
   scp -o StrictHostKeyChecking=no -r auth-$i root@192.168.123.100:/root/
 done
+sleep 120
 ssh -o StrictHostKeyChecking=no root@192.168.123.100 sh /root/wait-first-cluster.sh
 KUBEADMIN=$(cat $SNO_DIR/auth-rhacm/kubeadmin-password)
 echo "You can access the first cluster on https://console-openshift-console.apps.rhacm.example.com/"
