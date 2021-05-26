@@ -129,10 +129,10 @@ EOF
     echo \
 "imageContentSources:
 - mirrors:
-  - ocp4-bastion.$VM_NAME.example.com:5000/ocp4/openshift4
+  - ocp4-bastion.rhacm.example.com:5000/ocp4/openshift4
   source: quay.io/openshift-release-dev/ocp-release
 - mirrors:
-  - ocp4-bastion.$VM_NAME.example.com:5000/ocp4/openshift4
+  - ocp4-bastion.rhacm.example.com:5000/ocp4/openshift4
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev" >> ${INSTALLER_WORKDIR}/install-config.yaml
     sed -i "s|pullSecret:.*|pullSecret: '$(cat $INSTALLER_WORKDIR/pull-secret.json)'|g" ${INSTALLER_WORKDIR}/install-config.yaml
   fi
