@@ -16,6 +16,8 @@ while [ ! "`oc status 2>/dev/null |grep -o openshift`" ]; do
    echo -n "."
    sleep 1s
 done
+echo ""
+echo ""
 # echo -ne "\n[INFO] Waiting for the rhacm cluster to be done installing (4/5)"
 # while [ "`oc status 2>/dev/null |grep -o openshift`" ]; do
 #    echo -n "."
