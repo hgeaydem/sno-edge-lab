@@ -4,10 +4,10 @@
 PULL_SECRET=''
 
 INSTALLATION_DISK="/dev/vda"
-RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.0-x86_64"
+RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.8-x86_64"
 RHEL8_KVM=https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2
 #BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-live.x86_64.iso"
-BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/4.8.0-fc.0/rhcos-4.8.0-fc.0-x86_64-live.x86_64.iso"
+BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/4.8.0-fc.8/rhcos-4.8.0-fc.8-x86_64-live.x86_64.iso"
 BASTION_MEMORY=8192
 OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
 
