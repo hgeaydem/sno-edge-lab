@@ -1,0 +1,43 @@
+- name: Install SNO VM(s) using ISO
+  gather_facts: true
+  remote_user: root
+  hosts: target
+  vars:
+    ocs_file_list: []
+  vars_files:
+    - "../conf/vms.yml"
+  tasks:
+## TODO : Start task as async
+    - name: Start VM with ISO
+      vars:
+        vm_name: "ocp4-{{ item.key }}"
+      ansible.builtin.command: 'virt-install --connect qemu:///system -n {{ vm_name }} -r {{ item.value.mem }} --vcpus {{ item.value.cpus }} 
+      --cpu=host-passthrough --os-variant rhel8.1 --import --network network:ocp4-net,mac={{ item.value.base_network }} --graphics=none
+      --events on_reboot=restart --cdrom "/var/lib/libvirt/images/sno-{{ item.key }}/embedded.iso" --disk pool=default,size="40" --boot hd,cdrom 
+      --noautoconsole --wait=-1'
+      with_dict: "{{ vms['sno'] }}"
+      register: virt_output
+      when: deploy_type == "sno-iso"
+
+    - name: Add VBMC entries for AI deployments
+      ansible.builtin.command: "{{ item }}"
+      with_items:
+        - "vbmc add --username admin --password redhat --port 6230 --address 192.168.123.1 --libvirt-uri qemu:///system ocp4-bastion"
+        - "vbmc add --username admin --password redhat --port 6231 --address 192.168.123.1 --libvirt-uri qemu:///system ocp4-edge1"
+        - "vbmc add --username admin --password redhat --port 6232 --address 192.168.123.1 --libvirt-uri qemu:///system ocp4-edge2"
+        - "vbmc start ocp4-bastion"
+        - "vbmc start ocp4-edge1"
+        - "vbmc start ocp4-edge2"
+      register: vbmc_return
+      failed_when: vbmc_return.rc > 1   
+
+    - name: Add extra VBMC entries for AI deployments
+      ansible.builtin.command: "{{ item }}"
+      with_items:
+        - "vbmc add --username admin --password redhat --port 6233 --address 192.168.123.1 --libvirt-uri qemu:///system ocp4-edge3"
+        - "vbmc add --username admin --password redhat --port 6234 --address 192.168.123.1 --libvirt-uri qemu:///system ocp4-edge4"
+        - "vbmc start ocp4-edge3"
+        - "vbmc start ocp4-edge4"
+      register: vbmc_return
+      when: extra_sno_nodes
+      failed_when: vbmc_return.rc > 1   
