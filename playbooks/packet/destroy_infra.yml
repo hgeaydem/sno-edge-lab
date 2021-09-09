@@ -1,0 +1,103 @@
+---
+- name: Destroy Baremetal instance in provider {{ baremetal_provider }}
+  hosts: localhost
+  vars:
+    project_exists: false
+    project_id: null
+    instance_exists: false
+  tasks:
+
+     - name: Get list of Packet projects
+       uri:
+         url: https://api.equinix.com/metal/v1/projects
+         method: GET
+         status_code: 200
+         headers:
+           Content-Type: "application/json"
+           X-Auth-Token: "{{ packet_api_token }}"
+       register: projects
+
+     - name: Check if project {{ packet_project_name }} exists
+       vars:
+         project_name: "{{ packet_project_name }}"
+       set_fact:
+         project_exists: true
+         project_id: "{{ item.id }}"
+       with_items: "{{ projects.json.projects }}"
+       when: item.name == project_name
+
+     - name: Get list of Packet instances
+       uri:
+         url: "https://api.equinix.com/metal/v1/projects/{{ project_id }}/devices"
+         method: GET
+         status_code: 200, 404
+         headers:
+           Content-Type: "application/json"
+           X-Auth-Token: "{{ packet_api_token }}"
+       register: devices
+       when: project_exists | bool
+
+     - name: Get Packet instance ID
+       vars:
+         project_name: "{{ packet_project_name }}-node"
+       set_fact:
+         instance_id: "{{ item.id }}"
+         instance_exists: true
+       with_items: "{{ devices.json.devices }}"
+       when:
+         - project_exists | bool
+         - item.hostname == project_name
+
+     - name: Delete Packet instance
+       uri:
+         url: "https://api.equinix.com/metal/v1/devices/{{ instance_id }}"
+         method: DELETE
+         status_code: 204
+         body_format: json
+         headers:
+           Content-Type: "application/json"
+           X-Auth-Token: "{{ packet_api_token }}"
+       when: instance_exists | bool
+
+     - name: Sleep whilst instance is removed
+       pause:
+         minutes: 2
+       when: instance_exists | bool
+
+     - name: Delete Packet project
+       vars:
+         delete_project: "{{ packet_delete_project }}"
+       uri:
+         url: "https://api.equinix.com/metal/v1/projects/{{ project_id }}"
+         method: DELETE
+         status_code: 204
+         body_format: json
+         headers:
+           Content-Type: "application/json"
+           X-Auth-Token: "{{ packet_api_token }}"
+       when:
+         - project_exists
+         - delete_project
+
+     - name: Remove dynamic inventory file
+       ansible.builtin.file:
+         path: ../../inventory.yml
+         state: absent
+
+    - name: Remove entries for bastion from known_hosts locally
+      ansible.builtin.known_hosts:
+        path: "~/.ssh/known_hosts"
+        name: "192.168.123.100"
+        state: absent
+
+    - name: Remove entries for target from known_hosts
+      ansible.builtin.known_hosts:
+        path: "~/.ssh/known_hosts"
+        name: "{{ groups['target'][0] }}"
+        state: absent
+      when: groups['target'] is defined
+
+    - name: Remove generated directory
+      ansible.builtin.file:
+        path: "../../generated/"
+        state: absent
