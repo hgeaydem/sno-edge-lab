@@ -4,14 +4,14 @@
 PULL_SECRET=''
 
 INSTALLATION_DISK="/dev/vda"
-RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.8.0-fc.8-x86_64"
-RHEL8_KVM=https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2
+RELEASE_IMAGE="quay.io/openshift-release-dev/ocp-release:4.12.3-x86_64"
+RHEL8_KVM=https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20220913.0.x86_64.qcow2
 #BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-live.x86_64.iso"
-BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/4.8.0-fc.8/rhcos-4.8.0-fc.8-x86_64-live.x86_64.iso"
-BASTION_MEMORY=8192
-OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.7/openshift-client-linux.tar.gz
+BASE_OS_IMAGE="https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.12/latest/rhcos-live.x86_64.iso"
+BASTION_MEMORY=2048
+OC_CLIENT=https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.12/openshift-client-linux.tar.gz
 
-DISCONNECTED=true
+DISCONNECTED=false
 
 ########################
 SNO_DIR="$(pwd)"
@@ -46,16 +46,16 @@ prepare_host() {
     SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
   fi
   mkdir -p bin
-  sudo dnf -y update
-  sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-  sudo dnf -y install wget libvirt qemu-kvm virt-manager virt-install libguestfs libguestfs-tools libguestfs-xfs net-tools sshpass virt-what nmap
-  sudo dnf -y install podman jq
-  systemctl enable libvirtd
-  systemctl start libvirtd
+  # sudo dnf -y update
+  # sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+  # sudo dnf -y install wget libvirt qemu-kvm virt-manager virt-install libguestfs libguestfs-tools libguestfs-xfs net-tools sshpass virt-what nmap
+  # sudo dnf -y install podman jq
+  # systemctl enable libvirtd
+  # systemctl start libvirtd
 #  wget $OC_CLIENT
-  cp files/openshift-client* .
-  tar -zxvf openshift-client*
-  cp oc kubectl /usr/bin/
+  # cp files/openshift-client* .
+  # tar -zxvf openshift-client*
+  # cp oc kubectl /usr/bin/
   jq -n $PULL_SECRET > registry-config.json
   oc adm release extract --registry-config=registry-config.json --command=openshift-install --to ./bin ${RELEASE_IMAGE}
 }
@@ -157,7 +157,7 @@ install_vm_ign() {
       --graphics=none \
       --events on_reboot=restart \
       --cdrom "${INSTALLER_ISO_PATH_SNO_IN_LIBVIRT}" \
-      --disk pool=default,size="${DISK_GB}" \
+      --disk pool=nvme,size="${DISK_GB}" \
       --boot hd,cdrom \
       --noautoconsole \
       --wait=-1 &
@@ -285,7 +285,7 @@ EOF
 prepare_host
 define_network
 prepare_bastion
-for i in rhacm edge1 edge2 edge3 edge4
+for i in rhacm
 do
   VM_NAME=$i
   VOL_NAME="$VM_NAME.qcow2"
